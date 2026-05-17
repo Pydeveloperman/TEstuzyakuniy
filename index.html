@@ -127,7 +127,6 @@
             if (remote && remote.baza1) {
                 globalData = remote;
             } else {
-                // Birinchi marta — bo'sh struktura yaratamiz
                 globalData = {
                     baza1: [...backupQuestions],
                     baza2: [...backupQuestions],
@@ -139,6 +138,60 @@
             }
             questions = globalData[currentBazaId] || [...backupQuestions];
             render();
+
+            // Har 15 soniyada fonda yangilab turish
+            setInterval(async () => {
+                if (gameState === 'playing' || gameState === 'finished') return;
+                const fresh = await loadFromJsonBin();
+                if (!fresh) return;
+                globalData = fresh;
+
+                if (gameState === 'start') {
+                    questions = globalData[currentBazaId] || questions;
+                }
+
+                // Faqat o'chirilgan foydalanuvchini chiqaramiz
+                // Parol o'zgartirilsa — chiqarmaymiz (session_token o'zgarmaydi)
+                if (gameState !== 'login' && currentOnlineUser && currentOnlineUser !== 'admin') {
+                    const userObj = (globalData.users || []).find(u => u.username === currentOnlineUser);
+                    if (!userObj) {
+                        // Foydalanuvchi o'chirilgan — chiqaramiz
+                        handleLogout();
+                        errorMsg = 'Hisobingiz admin tomonidan o'chirildi.';
+                        render();
+                        return;
+                    }
+                    // Boshqa qurilmadan kirilganmi tekshiramiz
+                    const myToken = sessionStorage.getItem('my_user_device_token');
+                    if (userObj.session_token && userObj.session_token !== myToken) {
+                        handleLogout();
+                        errorMsg = 'Ushbu hisobga boshqa qurilmadan kirildi! Sessiyangiz yakunlandi.';
+                        render();
+                        return;
+                    }
+                }
+            }, 15000);
+        }
+
+        // Foydalanuvchi o'z login/parolini o'zgartirish
+        async function updateUserProfile() {
+            const newPass = document.getElementById('profileNewPass').value.trim();
+            const confirmPass = document.getElementById('profileConfirmPass').value.trim();
+
+            if (!newPass) { alert('Yangi parol kiriting!'); return; }
+            if (newPass.length < 3) { alert('Parol kamida 3 ta belgi bo'lishi kerak!'); return; }
+            if (newPass !== confirmPass) { alert('Parollar mos kelmadi!'); return; }
+
+            const usersList = (globalData && globalData.users) ? globalData.users : [];
+            const userObj = usersList.find(u => u.username === currentOnlineUser);
+            if (userObj) {
+                userObj.password = newPass;
+                globalData.users = usersList;
+                await saveToJsonBin(globalData);
+                document.getElementById('profileNewPass').value = '';
+                document.getElementById('profileConfirmPass').value = '';
+                alert('✅ Parol muvaffaqiyatli yangilandi! Sahifadan chiqib ketmadingiz.');
+            }
         }
 
         // --- Global Ilova Holati ---
@@ -201,9 +254,19 @@
         function checkUserSession() {
             const usersList = (globalData && globalData.users) ? globalData.users : [];
             const userObj = usersList.find(u => u.username === currentOnlineUser);
-            const mySessionToken = sessionStorage.getItem('my_user_device_token');
 
-            if (!userObj || userObj.session_token !== mySessionToken) {
+            // Foydalanuvchi o'chirilgan bo'lsa — chiqaramiz
+            if (!userObj) {
+                handleLogout();
+                errorMsg = 'Hisobingiz admin tomonidan o'chirildi.';
+                gameState = 'login';
+                render();
+                return false;
+            }
+
+            // Boshqa qurilmadan kirilganmi — faqat token bor bo'lsa tekshiramiz
+            const mySessionToken = sessionStorage.getItem('my_user_device_token');
+            if (userObj.session_token && userObj.session_token !== mySessionToken) {
                 handleLogout();
                 errorMsg = 'Ushbu hisobga boshqa qurilmadan kirildi! Sessiyangiz yakunlandi.';
                 gameState = 'login';
@@ -405,6 +468,18 @@
                             ${ICONS.play}
                             <span>Testni Boshlash</span>
                         </button>
+                    </div>
+
+                    <!-- Parolni o'zgartirish -->
+                    <div class="w-full bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-xl space-y-4">
+                        <h3 class="text-sm font-bold text-slate-300 border-b border-slate-700 pb-2">🔑 Parolni o'zgartirish</h3>
+                        <div class="space-y-3">
+                            <input type="password" id="profileNewPass" placeholder="Yangi parol" class="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-200 text-sm" />
+                            <input type="password" id="profileConfirmPass" placeholder="Parolni tasdiqlang" class="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-200 text-sm" />
+                            <button onclick="updateUserProfile()" class="w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold rounded-xl text-sm transition-all">
+                                Parolni yangilash
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
