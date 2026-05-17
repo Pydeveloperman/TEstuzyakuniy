@@ -69,42 +69,81 @@
             {"id":3,"q":"Amir Temur necha yil davomida Temuriylar davlatini boshqargan?","a":"35 yil (1370–1405)","b":"25 yil","c":"40 yil","d":"30 yil","correct":"a"}
         ];
 
+        // --- JSONBin.io Sozlamalari ---
+        const JSONBIN_MASTER_KEY = '$2a$10$OrOu6zgJbFMMfeSNP5BXWePv4jnhhfJfsZ9b86uBYPw080mcWUp3C';
+        const JSONBIN_ACCESS_KEY = '$2a$10$XTyvCJdwQ6u6O6o6tVekq.XC.pon923qlDRwEsKtf1ZYKWgkO52A.';
+        const JSONBIN_BIN_ID = '6a09b81cadc21f119ab2b6ee';
+        const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
+
         // --- Ko'p Bazali Tizim Sozlamalari ---
         const defaultBazas = [
-            { id: 'baza1', name: '9-sinf Tarix', file: 'tarix_9.json' },
-            { id: 'baza2', name: '10-sinf Tarix', file: 'tarix_10.json' },
-            { id: 'baza3', name: '11-sinf Tarix', file: 'tarix_11.json' }
+            { id: 'baza1', name: '9-sinf Tarix' },
+            { id: 'baza2', name: '10-sinf Tarix' },
+            { id: 'baza3', name: '11-sinf Tarix' }
         ];
 
-        // Baza konfigini har doim yangilash (defaultdan)
-        localStorage.setItem('quiz_baza_configs', JSON.stringify(defaultBazas));
+        // JSONBin dan ma'lumot o'qish
+        async function loadFromJsonBin() {
+            try {
+                const res = await fetch(JSONBIN_URL + '/latest', {
+                    headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+                });
+                if (res.ok) {
+                    const json = await res.json();
+                    return json.record; // { baza1: [...], baza2: [...], baza3: [...], users: [...], admin: {...} }
+                }
+            } catch(e) {}
+            return null;
+        }
 
-        // Har bir baza uchun — agar localStorage bo'sh bo'lsa, backupdan yukla
-        defaultBazas.forEach(b => {
-            const key = `quiz_questions_${b.id}`;
-            if (!localStorage.getItem(key)) {
-                localStorage.setItem(key, JSON.stringify(backupQuestions));
+        // JSONBin ga ma'lumot yozish
+        async function saveToJsonBin(data) {
+            try {
+                await fetch(JSONBIN_URL, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': JSONBIN_MASTER_KEY
+                    },
+                    body: JSON.stringify(data)
+                });
+            } catch(e) {
+                console.error('JSONBin saqlashda xatolik:', e);
             }
-        });
-
-        // Boshlang'ich Foydalanuvchilar va Admin
-        const defaultUsers = [
-            { username: 'talaba', password: '123', session_token: '' }
-        ];
-
-        if (!localStorage.getItem('quiz_users')) {
-            localStorage.setItem('quiz_users', JSON.stringify(defaultUsers));
         }
-        if (!localStorage.getItem('admin_username')) {
-            localStorage.setItem('admin_username', 'admin');
-        }
-        if (!localStorage.getItem('admin_password')) {
-            localStorage.setItem('admin_password', 'admin123');
+
+        // Global data object (JSONBin dan keladi)
+        let globalData = null;
+
+        // Boshlang'ich yuklash
+        async function initApp() {
+            document.getElementById('app').innerHTML = `
+                <div class="flex flex-col items-center justify-center space-y-4">
+                    <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p class="text-slate-400 text-sm">Ma'lumotlar yuklanmoqda...</p>
+                </div>
+            `;
+            const remote = await loadFromJsonBin();
+            if (remote && remote.baza1) {
+                globalData = remote;
+            } else {
+                // Birinchi marta — bo'sh struktura yaratamiz
+                globalData = {
+                    baza1: [...backupQuestions],
+                    baza2: [...backupQuestions],
+                    baza3: [...backupQuestions],
+                    users: [{ username: 'talaba', password: '123', session_token: '' }],
+                    admin: { username: 'admin', password: 'admin123' }
+                };
+                await saveToJsonBin(globalData);
+            }
+            questions = globalData[currentBazaId] || [...backupQuestions];
+            render();
         }
 
         // --- Global Ilova Holati ---
-        let currentBazaId = 'baza1'; // Birlamchi tanlangan baza
-        let questions = JSON.parse(localStorage.getItem(`quiz_questions_${currentBazaId}`));
+        let currentBazaId = 'baza1';
+        let questions = [];
         let quizLengthSetting = 10;
         let gameState = 'login'; // 'login', 'start', 'playing', 'finished', 'admin_dashboard'
         let errorMsg = '';
@@ -160,7 +199,7 @@
 
         // --- "1 Login = 1 Qurilma" tekshiruvi ---
         function checkUserSession() {
-            const usersList = JSON.parse(localStorage.getItem('quiz_users')) || [];
+            const usersList = (globalData && globalData.users) ? globalData.users : [];
             const userObj = usersList.find(u => u.username === currentOnlineUser);
             const mySessionToken = sessionStorage.getItem('my_user_device_token');
 
@@ -245,8 +284,8 @@
             }
 
             if (loginMode === 'admin') {
-                const storedAdminUser = localStorage.getItem('admin_username');
-                const storedAdminPass = localStorage.getItem('admin_password');
+                const storedAdminUser = (globalData && globalData.admin) ? globalData.admin.username : 'admin';
+                const storedAdminPass = (globalData && globalData.admin) ? globalData.admin.password : 'admin123';
 
                 if (user === storedAdminUser && pass === storedAdminPass) {
                     currentOnlineUser = 'admin';
@@ -258,14 +297,15 @@
                     errorMsg = 'Xato admin logini yoki paroli!';
                 }
             } else {
-                const usersList = JSON.parse(localStorage.getItem('quiz_users')) || [];
+                const usersList = (globalData && globalData.users) ? globalData.users : [];
                 const matchedUser = usersList.find(u => u.username === user && u.password === pass);
 
                 if (matchedUser) {
                     currentOnlineUser = user;
                     const deviceToken = 'dev_token_' + Math.random().toString(36).substr(2, 9) + Date.now();
                     matchedUser.session_token = deviceToken;
-                    localStorage.setItem('quiz_users', JSON.stringify(usersList));
+                    globalData.users = usersList;
+                    saveToJsonBin(globalData);
                     sessionStorage.setItem('my_user_device_token', deviceToken);
 
                     gameState = 'start';
@@ -287,16 +327,10 @@
             render();
         }
 
-        // --- Bazani tanlash (faqat localStorage) ---
+        // --- Bazani tanlash ---
         function selectBaza(bazaId) {
             currentBazaId = bazaId;
-            const localQuestions = localStorage.getItem(`quiz_questions_${bazaId}`);
-            if (localQuestions) {
-                questions = JSON.parse(localQuestions);
-            } else {
-                questions = [...backupQuestions];
-                localStorage.setItem(`quiz_questions_${bazaId}`, JSON.stringify(questions));
-            }
+            questions = (globalData && globalData[bazaId]) ? globalData[bazaId] : [...backupQuestions];
             infoMsg = '';
             if (quizLengthSetting > questions.length) {
                 quizLengthSetting = questions.length;
@@ -306,7 +340,7 @@
 
         // --- O'quvchi uchun Boshlang'ich Sahifa ---
         function renderStartScreen() {
-            const bazas = JSON.parse(localStorage.getItem('quiz_baza_configs')) || defaultBazas;
+            const bazas = defaultBazas;
             
             let bazaButtonsHTML = '';
             bazas.forEach(b => {
@@ -552,12 +586,12 @@
                 q.a.toLowerCase().includes(questionSearchQuery.toLowerCase())
             );
 
-            const usersList = JSON.parse(localStorage.getItem('quiz_users')) || [];
+            const usersList = (globalData && globalData.users) ? globalData.users : [];
             const filteredUsers = usersList.filter(u => 
                 u.username.toLowerCase().includes(userSearchQuery.toLowerCase())
             );
 
-            const bazas = JSON.parse(localStorage.getItem('quiz_baza_configs')) || defaultBazas;
+            const bazas = defaultBazas;
 
             const tabBtnClass = (tab) => adminTab === tab 
                 ? "bg-blue-600 text-white flex items-center space-x-2 px-4 py-2.5 rounded-xl font-semibold transition-all text-sm" 
@@ -726,7 +760,7 @@
             else if (adminTab === 'baza_config') {
                 let bazasListHTML = '';
                 bazas.forEach(b => {
-                    const localQ = JSON.parse(localStorage.getItem(`quiz_questions_${b.id}`) || '[]');
+                    const localQ = (globalData && globalData[b.id]) ? globalData[b.id] : [];
                     const qCount = localQ.length;
                     bazasListHTML += `
                         <div class="bg-slate-900 p-4 rounded-xl border border-slate-750 flex flex-col gap-3">
@@ -783,7 +817,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div class="space-y-1">
                                 <label class="text-xs text-slate-400 font-semibold block">Yangi Admin Login</label>
-                                <input type="text" id="newAdminUser" value="${localStorage.getItem('admin_username')}" class="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-200 text-sm" />
+                                <input type="text" id="newAdminUser" value="${(globalData && globalData.admin) ? globalData.admin.username : 'admin'}" class="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-200 text-sm" />
                             </div>
                             <div class="space-y-1">
                                 <label class="text-xs text-slate-400 font-semibold block">Yangi Admin Parol</label>
@@ -879,10 +913,6 @@
                             <div class="space-y-1">
                                 <label class="text-xs text-slate-400 font-semibold block">Baza nomi (Ekrandagi ko'rinishi)</label>
                                 <input type="text" id="modalBazaName" value="${bazaObj ? bazaObj.name : ''}" class="w-full px-4 py-2.5 bg-slate-900 border border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-200" />
-                            </div>
-                            <div class="space-y-1">
-                                <label class="text-xs text-slate-400 font-semibold block">Fayl nomi (.json)</label>
-                                <input type="text" id="modalBazaFile" value="${bazaObj ? bazaObj.file : ''}" class="w-full px-4 py-2.5 bg-slate-900 border border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-200" />
                             </div>
                         </div>
                     `;
@@ -991,7 +1021,8 @@
             const index = questions.findIndex((q, idx) => q.id == idOrIdx || idx == idOrIdx);
             if (index !== -1) {
                 questions.splice(index, 1);
-                localStorage.setItem(`quiz_questions_${currentBazaId}`, JSON.stringify(questions));
+                globalData[currentBazaId] = questions;
+                saveToJsonBin(globalData);
                 render();
             }
         }
@@ -999,21 +1030,23 @@
         // CRUD: Foydalanuvchini O'chirish
         function deleteUser(username) {
             if (!confirm(`Haqiqatan ham "${username}" o'quvchini butunlay o'chirib tashlamoqchimisiz?`)) return;
-            const usersList = JSON.parse(localStorage.getItem('quiz_users')) || [];
+            const usersList = (globalData && globalData.users) ? globalData.users : [];
             const index = usersList.findIndex(u => u.username === username);
             if (index !== -1) {
                 usersList.splice(index, 1);
-                localStorage.setItem('quiz_users', JSON.stringify(usersList));
+                globalData.users = usersList;
+                saveToJsonBin(globalData);
                 render();
             }
         }
 
         function killUserSession(username) {
-            const usersList = JSON.parse(localStorage.getItem('quiz_users')) || [];
+            const usersList = (globalData && globalData.users) ? globalData.users : [];
             const userObj = usersList.find(u => u.username === username);
             if (userObj) {
                 userObj.session_token = '';
-                localStorage.setItem('quiz_users', JSON.stringify(usersList));
+                globalData.users = usersList;
+                saveToJsonBin(globalData);
                 alert(`"${username}" sessiyasi muvaffaqiyatli yopildi!`);
                 render();
             }
@@ -1034,8 +1067,7 @@
         }
 
         function saveModalData() {
-            const usersList = JSON.parse(localStorage.getItem('quiz_users')) || [];
-            const bazas = JSON.parse(localStorage.getItem('quiz_baza_configs')) || defaultBazas;
+            const usersList = (globalData && globalData.users) ? globalData.users : [];
 
             if (activeModal === 'add_q' || activeModal === 'edit_q') {
                 const q = document.getElementById('modalQ').value.trim();
@@ -1058,7 +1090,8 @@
                         qObj.q = q; qObj.a = a; qObj.b = b; qObj.c = c; qObj.d = d;
                     }
                 }
-                localStorage.setItem(`quiz_questions_${currentBazaId}`, JSON.stringify(questions));
+                globalData[currentBazaId] = questions;
+                saveToJsonBin(globalData);
             } 
             else if (activeModal === 'add_u' || activeModal === 'edit_u') {
                 const usernameInput = document.getElementById('modalUser').value.trim().toLowerCase();
@@ -1082,24 +1115,18 @@
                         userObj.password = passwordInput;
                     }
                 }
-                localStorage.setItem('quiz_users', JSON.stringify(usersList));
+                globalData.users = usersList;
+                saveToJsonBin(globalData);
             }
             else if (activeModal === 'edit_b') {
                 const newBazaName = document.getElementById('modalBazaName').value.trim();
-                const newBazaFile = document.getElementById('modalBazaFile').value.trim();
-                if (!newBazaName || !newBazaFile) {
-                    alert('Baza nomi va fayl nomi bo\'sh bo\'lishi mumkin emas!');
+                if (!newBazaName) {
+                    alert('Baza nomi bo\'sh bo\'lishi mumkin emas!');
                     return;
                 }
-                if (!newBazaFile.toLowerCase().endsWith('.json')) {
-                    alert('Fayl nomi ".json" kengaytmasi bilan tugashi shart!');
-                    return;
-                }
-                const bazaObj = bazas.find(b => b.id === editingBazaId);
+                const bazaObj = defaultBazas.find(b => b.id === editingBazaId);
                 if (bazaObj) {
                     bazaObj.name = newBazaName;
-                    bazaObj.file = newBazaFile;
-                    localStorage.setItem('quiz_baza_configs', JSON.stringify(bazas));
                 }
             }
 
@@ -1116,15 +1143,17 @@
                 return;
             }
 
-            localStorage.setItem('admin_username', newUser);
+            if (!globalData.admin) globalData.admin = {};
+            globalData.admin.username = newUser;
             if (newPass) {
                 if (newPass.length < 4) {
                     alert('Parol kamida 4 xonali bo\'lishi lozim!');
                     return;
                 }
-                localStorage.setItem('admin_password', newPass);
+                globalData.admin.password = newPass;
             }
 
+            saveToJsonBin(globalData);
             alert('Admin ma\'lumotlari muvaffaqiyatli yangilandi!');
             render();
         }
@@ -1135,7 +1164,7 @@
             const file = event.target.files[0];
             if (!file) return;
 
-            const bazas = JSON.parse(localStorage.getItem('quiz_baza_configs')) || defaultBazas;
+            const bazas = defaultBazas;
             const bazaObj = bazas.find(b => b.id === bazaId);
             const bazaName = bazaObj ? bazaObj.name : bazaId;
 
@@ -1144,11 +1173,12 @@
                 try {
                     const data = JSON.parse(e.target.result);
                     if (Array.isArray(data) && data.length > 0 && data[0].q && data[0].a) {
-                        localStorage.setItem(`quiz_questions_${bazaId}`, JSON.stringify(data));
+                        globalData[bazaId] = data;
                         if (bazaId === currentBazaId) {
                             questions = data;
                         }
-                        alert(`✅ "${bazaName}" bazasiga ${data.length} ta savol muvaffaqiyatli yuklandi!`);
+                        saveToJsonBin(globalData);
+                        alert(`✅ "${bazaName}" bazasiga ${data.length} ta savol muvaffaqiyatli yuklandi! Barcha foydalanuvchilar uchun yangilandi.`);
                         render();
                     } else {
                         alert('❌ Fayl formati noto\'g\'ri. JSON faylda {q, a, b, c, d, correct} maydonlari bo\'lishi kerak.');
@@ -1170,7 +1200,8 @@
                     const data = JSON.parse(e.target.result);
                     if (Array.isArray(data) && data.length > 0 && data[0].q && data[0].a) {
                         questions = data;
-                        localStorage.setItem(`quiz_questions_${currentBazaId}`, JSON.stringify(questions));
+                        globalData[currentBazaId] = data;
+                        saveToJsonBin(globalData);
                         gameState = 'start';
                         infoMsg = 'Fayl muvaffaqiyatli yuklandi!';
                     } else {
@@ -1275,7 +1306,7 @@
 
         // --- Boshlang'ich sahifa yuklanishi ---
         window.onload = function() {
-            render();
+            initApp();
         };
     </script>
 </body>
