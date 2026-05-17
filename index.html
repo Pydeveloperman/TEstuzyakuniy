@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tarix Quiz App + Ko'p Bazali Tizim</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
         @keyframes spin-slow {
             from { transform: rotate(0deg); }
@@ -157,7 +156,7 @@
                     if (!userObj) {
                         // Foydalanuvchi o'chirilgan — chiqaramiz
                         handleLogout();
-                        errorMsg = 'Hisobingiz admin tomonidan o'chirildi.';
+                        errorMsg = "Hisobingiz admin tomonidan o'chirildi.";
                         render();
                         return;
                     }
@@ -179,7 +178,7 @@
             const confirmPass = document.getElementById('profileConfirmPass').value.trim();
 
             if (!newPass) { alert('Yangi parol kiriting!'); return; }
-            if (newPass.length < 3) { alert('Parol kamida 3 ta belgi bo'lishi kerak!'); return; }
+            if (newPass.length < 3) { alert("Parol kamida 3 ta belgi bo'lishi kerak!"); return; }
             if (newPass !== confirmPass) { alert('Parollar mos kelmadi!'); return; }
 
             const usersList = (globalData && globalData.users) ? globalData.users : [];
@@ -258,7 +257,7 @@
             // Foydalanuvchi o'chirilgan bo'lsa — chiqaramiz
             if (!userObj) {
                 handleLogout();
-                errorMsg = 'Hisobingiz admin tomonidan o'chirildi.';
+                errorMsg = "Hisobingiz admin tomonidan o'chirildi.";
                 gameState = 'login';
                 render();
                 return false;
@@ -341,7 +340,7 @@
             const pass = document.getElementById('loginPass').value.trim();
 
             if (!user || !pass) {
-                errorMsg = 'Login va parolni to\'ldiring!';
+                errorMsg = "Login va parolni to'ldiring!";
                 render();
                 return;
             }
@@ -560,7 +559,7 @@
                     <div class="h-12 flex items-center justify-center">
                         ${isAnswered ? `
                             <div class="flex items-center space-x-2 text-blue-400 animate-pulse font-medium text-sm">
-                                <span>${currentIndex + 1 === currentQuestions.length ? 'Raund yakunlanmoqda...' : 'Keyingi savolga o\'tilmoqda...'}</span>
+                                <span>${currentIndex + 1 === currentQuestions.length ? 'Raund yakunlanmoqda...' : "Keyingi savolga o'tilmoqda..."}</span>
                             </div>
                         ` : ''}
                     </div>
@@ -1061,7 +1060,7 @@
                         <div class="space-y-4 overflow-hidden flex flex-col h-full">
                             <div class="flex items-center justify-between border-b border-slate-750 pb-3 flex-shrink-0">
                                 <h3 class="font-bold text-lg text-slate-100">
-                                    ${adminTab === 'questions' ? 'Savollar boshqaruvi' : adminTab === 'users' ? 'O\'quvchilar xavfsizligi' : adminTab === 'baza_config' ? 'Mavzular / Bazalar' : 'Tizim sozlamalari'}
+                                    ${adminTab === 'questions' ? 'Savollar boshqaruvi' : adminTab === 'users' ? "O'quvchilar xavfsizligi" : adminTab === 'baza_config' ? 'Mavzular / Bazalar' : 'Tizim sozlamalari'}
                                 </h3>
                                 <span class="text-xs text-slate-400">Jami: <b>${questions.length} ta</b> savol faol</span>
                             </div>
@@ -1092,7 +1091,7 @@
 
         // CRUD: Savolni O'chirish (Hozirgi bazadan)
         function deleteQuestion(idOrIdx) {
-            if (!confirm('Haqiqatan ham ushbu savolni o\'chirmoqchimisiz?')) return;
+            if (!confirm("Haqiqatan ham ushbu savolni o'chirmoqchimisiz?")) return;
             const index = questions.findIndex((q, idx) => q.id == idOrIdx || idx == idOrIdx);
             if (index !== -1) {
                 questions.splice(index, 1);
@@ -1152,7 +1151,7 @@
                 const d = document.getElementById('modalD').value.trim();
 
                 if (!q || !a || !b || !c || !d) {
-                    alert('Barcha maydonlarni to\'ldiring!');
+                    alert("Barcha maydonlarni to'ldiring!");
                     return;
                 }
 
@@ -1173,7 +1172,7 @@
                 const passwordInput = document.getElementById('modalPass').value.trim();
 
                 if (!usernameInput || !passwordInput) {
-                    alert('Login va parol maydonlarini to\'ldiring!');
+                    alert("Login va parol maydonlarini to'ldiring!");
                     return;
                 }
 
@@ -1196,7 +1195,7 @@
             else if (activeModal === 'edit_b') {
                 const newBazaName = document.getElementById('modalBazaName').value.trim();
                 if (!newBazaName) {
-                    alert('Baza nomi bo\'sh bo\'lishi mumkin emas!');
+                    alert("Baza nomi bo'sh bo'lishi mumkin emas!");
                     return;
                 }
                 const bazaObj = defaultBazas.find(b => b.id === editingBazaId);
@@ -1214,7 +1213,7 @@
             const newPass = document.getElementById('newAdminPass').value.trim();
 
             if (!newUser) {
-                alert('Admin logini bo\'sh bo\'lishi mumkin emas!');
+                alert("Admin logini bo'sh bo'lishi mumkin emas!");
                 return;
             }
 
@@ -1222,14 +1221,14 @@
             globalData.admin.username = newUser;
             if (newPass) {
                 if (newPass.length < 4) {
-                    alert('Parol kamida 4 xonali bo\'lishi lozim!');
+                    alert("Parol kamida 4 xonali bo'lishi lozim!");
                     return;
                 }
                 globalData.admin.password = newPass;
             }
 
             saveToJsonBin(globalData);
-            alert('Admin ma\'lumotlari muvaffaqiyatli yangilandi!');
+            alert("Admin ma'lumotlari muvaffaqiyatli yangilandi!");
             render();
         }
 
@@ -1256,10 +1255,10 @@
                         alert(`✅ "${bazaName}" bazasiga ${data.length} ta savol muvaffaqiyatli yuklandi! Barcha foydalanuvchilar uchun yangilandi.`);
                         render();
                     } else {
-                        alert('❌ Fayl formati noto\'g\'ri. JSON faylda {q, a, b, c, d, correct} maydonlari bo\'lishi kerak.');
+                        alert("❌ Fayl formati noto'g'ri. JSON faylda {q, a, b, c, d, correct} maydonlari bo'lishi kerak.");
                     }
                 } catch (err) {
-                    alert('❌ JSON faylni o\'qishda xatolik: ' + err.message);
+                    alert("❌ JSON faylni o'qishda xatolik: " + err.message);
                 }
             };
             reader.readAsText(file);
@@ -1280,10 +1279,10 @@
                         gameState = 'start';
                         infoMsg = 'Fayl muvaffaqiyatli yuklandi!';
                     } else {
-                        alert('Fayl formati noto\'g\'ri. Iltimos, to\'g\'ri JSON fayl yuklang.');
+                        alert("Fayl formati noto'g'ri. Iltimos, to'g'ri JSON fayl yuklang.");
                     }
                 } catch (err) {
-                    alert('JSON faylni o\'qishda xatolik yuz berdi.');
+                    alert("JSON faylni o'qishda xatolik yuz berdi.");
                 }
                 render();
             };
