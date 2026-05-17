@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tarix Quiz App + Ko'p Bazali Tizim</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+            animation: spin-slow 8s linear infinite;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b82f6;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-200 font-sans flex items-center justify-center p-4 selection:bg-blue-500/30">
+
+    <div id="app" class="w-full flex justify-center py-6">
+        <!-- Content injected dynamically by JavaScript -->
+    </div>
+
+    <script>
+        // --- SVG Ikonkalari ---
+        const ICONS = {
+            bookOpen: `<svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>`,
+            upload: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>`,
+            check: `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>`,
+            play: `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>`,
+            checkCircle: `<svg class="w-6 h-6 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+            xCircle: `<svg class="w-6 h-6 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+            trophy: `<svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5a3 3 0 10-6 0v1a3 3 0 003 3h3zm0 0h3a2 2 0 012 2v1H9v-1a2 2 0 012-2zm0 12h-4a2 2 0 01-2-2V9h12v7a2 2 0 01-2 2h-4z"></path></svg>`,
+            arrowRight: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>`,
+            refresh: `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17"></path></svg>`,
+            alertCircle: `<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`,
+            shield: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>`,
+            plus: `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>`,
+            edit: `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>`,
+            trash: `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`,
+            search: `<svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>`,
+            settings: `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>`,
+            users: `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>`,
+            logout: `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>`,
+            userIcon: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>`,
+            database: `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>`
+        };
+
+        // --- Boshlang'ich Savollar (Zaxira) ---
+        const backupQuestions = [
+            {"id":1,"q":"Davlatning asosiy vazifalaridan biri?","a":"Fuqarolarning huquq va erkinliklarini himoya qilish, qonun ustuvorligi va xavfsizlikni ta'minlash","b":"Faqat soliq yig'ish va byudjetni boshqarish","c":"Harbiy kuchlarni kuchaytirish","d":"Xorijiy investitsiyalarni jalb qilish","correct":"a"},
+            {"id":2,"q":"Aleksandr Makedonskiyga qarshi kurashgan xalq qahramoni?","a":"Spitamen","b":"Shiroq","c":"Tomira","d":"Modu","correct":"a"},
+            {"id":3,"q":"Amir Temur necha yil davomida Temuriylar davlatini boshqargan?","a":"35 yil (1370–1405)","b":"25 yil","c":"40 yil","d":"30 yil","correct":"a"}
+        ];
+
+        // --- Ko'p Bazali Tizim Sozlamalari ---
+        const defaultBazas = [
+            { id: 'baza1', name: '9-sinf Tarix', file: 'tarix_9.json' },
+            { id: 'baza2', name: '10-sinf Tarix', file: 'tarix_10.json' },
+            { id: 'baza3', name: '11-sinf Tarix', file: 'tarix_11.json' }
+        ];
+
+        // Baza konfigini har doim yangilash (defaultdan)
+        localStorage.setItem('quiz_baza_configs', JSON.stringify(defaultBazas));
+
+        // Har bir baza uchun — agar localStorage bo'sh bo'lsa, backupdan yukla
+        defaultBazas.forEach(b => {
+            const key = `quiz_questions_${b.id}`;
+            if (!localStorage.getItem(key)) {
+                localStorage.setItem(key, JSON.stringify(backupQuestions));
+            }
+        });
+
+        // Boshlang'ich Foydalanuvchilar va Admin
+        const defaultUsers = [
+            { username: 'talaba', password: '123', session_token: '' }
+        ];
+
+        if (!localStorage.getItem('quiz_users')) {
+            localStorage.setItem('quiz_users', JSON.stringify(defaultUsers));
+        }
+        if (!localStorage.getItem('admin_username')) {
+            localStorage.setItem('admin_username', 'admin');
+        }
+        if (!localStorage.getItem('admin_password')) {
+            localStorage.setItem('admin_password', 'admin123');
+        }
+
+        // --- Global Ilova Holati ---
+        let currentBazaId = 'baza1'; // Birlamchi tanlangan baza
+        let questions = JSON.parse(localStorage.getItem(`quiz_questions_${currentBazaId}`));
+        let quizLengthSetting = 10;
+        let gameState = 'login'; // 'login', 'start', 'playing', 'finished', 'admin_dashboard'
+        let errorMsg = '';
+        let infoMsg = ''; // Foydalanuvchi uchun yuklash bo'yicha ma'lumot xabari
+        
+        let loginMode = 'student'; 
+        let currentOnlineUser = null; 
+
+        // Admin sozlamalari
+        let adminTab = 'questions'; // 'questions', 'users', 'baza_config', 'settings'
+        let questionSearchQuery = '';
+        let userSearchQuery = '';
+
+        // Tahrirlash va Qo'shish modallari
+        let activeModal = null; // 'add_q', 'edit_q', 'add_u', 'edit_u', 'edit_b', null
+        let editingQuestionId = null;
+        let editingUsername = null;
+        let editingBazaId = null;
+
+        // Quiz jarayoni ma'lumotlari
+        let shuffledPool = [];
+        let poolPointer = 0;
+        let currentQuestions = [];
+        let currentIndex = 0;
+        let isAnswered = false;
+        let selectedAnswer = null;
+        let shuffledOptions = [];
+
+        let score = 0;
+        let totalScore = 0;
+        let totalAnswered = 0;
+
+        // --- Asosiy Render Funksiyasi ---
+        function render() {
+            if (gameState !== 'login' && currentOnlineUser && currentOnlineUser !== 'admin') {
+                const isValid = checkUserSession();
+                if (!isValid) return;
+            }
+
+            const app = document.getElementById('app');
+            if (gameState === 'login') {
+                app.innerHTML = renderLoginScreen();
+            } else if (gameState === 'start') {
+                app.innerHTML = renderStartScreen();
+            } else if (gameState === 'playing') {
+                app.innerHTML = renderQuizScreen();
+            } else if (gameState === 'finished') {
+                app.innerHTML = renderResultScreen();
+            } else if (gameState === 'admin_dashboard') {
+                app.innerHTML = renderAdminDashboardScreen();
+            }
+        }
+
+        // --- "1 Login = 1 Qurilma" tekshiruvi ---
+        function checkUserSession() {
+            const usersList = JSON.parse(localStorage.getItem('quiz_users')) || [];
+            const userObj = usersList.find(u => u.username === currentOnlineUser);
+            const mySessionToken = sessionStorage.getItem('my_user_device_token');
+
+            if (!userObj || userObj.session_token !== mySessionToken) {
+                handleLogout();
+                errorMsg = 'Ushbu hisobga boshqa qurilmadan kirildi! Sessiyangiz yakunlandi.';
+                gameState = 'login';
+                render();
+                return false;
+            }
+            return true;
+        }
+
+        // --- Kirish Ekrani ---
+        function renderLoginScreen() {
+            const errorHTML = errorMsg 
+                ? `<div class="flex items-center space-x-2 text-red-400 bg-red-400/10 p-3 rounded-lg border border-red-400/20 mb-4 animate-bounce">
+                     ${ICONS.alertCircle}
+                     <p class="text-xs">${errorMsg}</p>
+                   </div>`
+                : '';
+
+            const isStudent = loginMode === 'student';
+
+            return `
+                <div class="flex flex-col items-center justify-center p-4 space-y-6 max-w-md w-full animate-in fade-in duration-300">
+                    <div class="w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-3xl flex items-center justify-center shadow-lg shadow-blue-500/20 transform hover:scale-105 transition-all">
+                        ${isStudent ? ICONS.bookOpen : ICONS.shield}
+                    </div>
+
+                    <div class="text-center space-y-1">
+                        <h2 class="text-3xl font-extrabold text-slate-100 tracking-tight">Tarix Quiz Tizimi</h2>
+                        <p class="text-slate-400 text-sm">Ilm va tarix sinovi portaliga xush kelibsiz</p>
+                    </div>
+
+                    <div class="w-full bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden flex flex-col">
+                        <!-- Tab switcher -->
+                        <div class="flex border-b border-slate-700 bg-slate-850">
+                            <button onclick="setLoginMode('student')" class="flex-1 py-3 text-center text-sm font-bold border-b-2 transition-all ${isStudent ? 'text-blue-400 border-blue-500 bg-slate-800' : 'text-slate-400 border-transparent hover:text-slate-300'}">
+                                O'quvchi Kirish
+                            </button>
+                            <button onclick="setLoginMode('admin')" class="flex-1 py-3 text-center text-sm font-bold border-b-2 transition-all ${!isStudent ? 'text-blue-400 border-blue-500 bg-slate-800' : 'text-slate-400 border-transparent hover:text-slate-300'}">
+                                Admin Kirish
+                            </button>
+                        </div>
+
+                        <div class="p-6 space-y-4">
+                            ${errorHTML}
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 block">Foydalanuvchi nomi (Login)</label>
+                                <input type="text" id="loginUser" placeholder="${isStudent ? 'talaba' : 'admin'}" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-200 text-sm" />
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 block">Parol</label>
+                                <input type="password" id="loginPass" placeholder="••••••••" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-200 text-sm" />
+                            </div>
+
+                            <button onclick="handleLogin()" class="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-500/15 transition-all active:scale-[0.98] mt-2">
+                                Tizimga kirish
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- Kirish mantiqi ---
+        function setLoginMode(mode) {
+            loginMode = mode;
+            errorMsg = '';
+            render();
+        }
+
+        function handleLogin() {
+            const user = document.getElementById('loginUser').value.trim();
+            const pass = document.getElementById('loginPass').value.trim();
+
+            if (!user || !pass) {
+                errorMsg = 'Login va parolni to\'ldiring!';
+                render();
+                return;
+            }
+
+            if (loginMode === 'admin') {
+                const storedAdminUser = localStorage.getItem('admin_username');
+                const storedAdminPass = localStorage.getItem('admin_password');
+
+                if (user === storedAdminUser && pass === storedAdminPass) {
+                    currentOnlineUser = 'admin';
+                    gameState = 'admin_dashboard';
+                    adminTab = 'questions';
+                    errorMsg = '';
+                    selectBaza(currentBazaId); // Admin kirganda tanlangan bazani faollashtirish
+                } else {
+                    errorMsg = 'Xato admin logini yoki paroli!';
+                }
+            } else {
+                const usersList = JSON.parse(localStorage.getItem('quiz_users')) || [];
+                const matchedUser = usersList.find(u => u.username === user && u.password === pass);
+
+                if (matchedUser) {
+                    currentOnlineUser = user;
+                    const deviceToken = 'dev_token_' + Math.random().toString(36).substr(2, 9) + Date.now();
+                    matchedUser.session_token = deviceToken;
+                    localStorage.setItem('quiz_users', JSON.stringify(usersList));
+                    sessionStorage.setItem('my_user_device_token', deviceToken);
+
+                    gameState = 'start';
+                    errorMsg = '';
+                    selectBaza(currentBazaId); // O'quvchi kirganda default bazani yuklash
+                } else {
+                    errorMsg = 'Foydalanuvchi nomi yoki parol xato!';
+                }
+            }
+            render();
+        }
+
+        function handleLogout() {
+            currentOnlineUser = null;
+            sessionStorage.removeItem('my_user_device_token');
+            gameState = 'login';
+            errorMsg = '';
+            infoMsg = '';
+            render();
+        }
+
+        // --- Bazani tanlash (faqat localStorage) ---
+        function selectBaza(bazaId) {
+            currentBazaId = bazaId;
+            const localQuestions = localStorage.getItem(`quiz_questions_${bazaId}`);
+            if (localQuestions) {
+                questions = JSON.parse(localQuestions);
+            } else {
+                questions = [...backupQuestions];
+                localStorage.setItem(`quiz_questions_${bazaId}`, JSON.stringify(questions));
+            }
+            infoMsg = '';
+            if (quizLengthSetting > questions.length) {
+                quizLengthSetting = questions.length;
+            }
+            render();
+        }
+
+        // --- O'quvchi uchun Boshlang'ich Sahifa ---
+        function renderStartScreen() {
+            const bazas = JSON.parse(localStorage.getItem('quiz_baza_configs')) || defaultBazas;
+            
+            let bazaButtonsHTML = '';
+            bazas.forEach(b => {
+                const isActive = b.id === currentBazaId;
+                const activeStyle = isActive 
+                    ? 'bg-blue-600 border-blue-500 text-white shadow-lg ring-2 ring-blue-500/50' 
+                    : 'bg-slate-750 hover:bg-slate-700 text-slate-300 border-slate-700';
+
+                bazaButtonsHTML += `
+                    <button onclick="selectBaza('${b.id}')" class="flex-1 py-3 px-4 rounded-xl border font-bold text-sm transition-all text-center ${activeStyle}">
+                        <div class="text-[10px] uppercase text-slate-400 font-semibold mb-1">Mavzu / Sinf:</div>
+                        ${b.name}
+                    </button>
+                `;
+            });
+
+            return `
+                <div class="flex flex-col items-center justify-center p-4 space-y-8 max-w-lg w-full relative">
+                    <button onclick="handleLogout()" class="absolute top-0 right-0 flex items-center space-x-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg border border-slate-700 transition-colors">
+                        ${ICONS.logout}
+                        <span>Chiqish</span>
+                    </button>
+
+                    <div class="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/30 mt-8">
+                        ${ICONS.bookOpen}
+                    </div>
+                    
+                    <div class="text-center space-y-2">
+                        <h1 class="text-3xl font-bold text-slate-100 tracking-tight">Xush kelibsiz, <span class="text-blue-400 capitalize">${currentOnlineUser}</span>!</h1>
+                        <p class="text-slate-400 text-sm">Test topshirish uchun quyidagi mavzulardan birini tanlang:</p>
+                    </div>
+
+                    <!-- Bazalar ro'yxati -->
+                    <div class="w-full flex flex-col sm:flex-row gap-3">
+                        ${bazaButtonsHTML}
+                    </div>
+
+                    <div class="w-full bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl space-y-6">
+                        <!-- Ma'lumot xabari -->
+                        ${infoMsg ? `
+                            <div class="text-center text-xs text-blue-400 bg-blue-500/10 p-2.5 rounded-lg border border-blue-500/20">
+                                ${infoMsg}
+                            </div>
+                        ` : ''}
+
+                        <div class="flex justify-between items-center bg-slate-900/50 p-3 rounded-xl border border-slate-750 text-xs text-slate-400">
+                            <span>Tanlangan baza: <b class="text-slate-200 capitalize">${bazas.find(b=>b.id===currentBazaId)?.name}</b></span>
+                            <span>Savollar soni: <b class="text-slate-200">${questions.length} ta</b></span>
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="text-sm font-medium text-slate-300 block">Raunddagi savollar soni</label>
+                            <select onchange="updateQuizLength(this.value)" class="w-full px-4 py-3 bg-slate-900 text-slate-200 rounded-xl border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer text-sm">
+                                <option value="10" ${quizLengthSetting === 10 ? 'selected' : ''}>10 talik rejim</option>
+                                <option value="20" ${quizLengthSetting === 20 ? 'selected' : ''}>20 talik rejim</option>
+                                <option value="50" ${quizLengthSetting === 50 ? 'selected' : ''}>50 talik rejim</option>
+                                <option value="${questions.length}" ${quizLengthSetting === questions.length ? 'selected' : ''}>Barcha savollar (${questions.length})</option>
+                            </select>
+                        </div>
+
+                        <button onclick="startNewQuiz()" class="w-full flex items-center justify-center space-x-2 px-4 py-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-[0.98]">
+                            ${ICONS.play}
+                            <span>Testni Boshlash</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderQuizScreen() {
+            const question = currentQuestions[currentIndex];
+            const progress = (currentIndex / currentQuestions.length) * 100;
+            const absoluteIndex = poolPointer + currentIndex + 1;
+
+            let optionsHTML = '';
+            shuffledOptions.forEach(option => {
+                const isCorrectOption = option.key === question.correct;
+                const isSelected = selectedAnswer === option.key;
+
+                let buttonStyle = "bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600";
+                let iconHTML = '';
+
+                if (isAnswered) {
+                    if (isCorrectOption) {
+                        buttonStyle = "bg-emerald-500/25 border-emerald-500/50 text-emerald-300 font-medium";
+                        iconHTML = ICONS.checkCircle;
+                    } else if (isSelected && !isCorrectOption) {
+                        buttonStyle = "bg-red-500/25 border-red-500/50 text-red-300";
+                        iconHTML = ICONS.xCircle;
+                    } else {
+                        buttonStyle = "bg-slate-800 text-slate-500 border-slate-700 opacity-40";
+                    }
+                }
+
+                optionsHTML += `
+                    <button 
+                        onclick="handleAnswerClick('${option.key}')" 
+                        ${isAnswered ? 'disabled' : ''} 
+                        class="w-full text-left p-4 rounded-xl border transition-all duration-205 flex items-center justify-between group ${buttonStyle} ${!isAnswered ? 'hover:border-blue-500/50 hover:translate-x-1' : ''}"
+                    >
+                        <span class="text-base leading-relaxed pr-4">${option.text}</span>
+                        ${iconHTML}
+                    </button>
+                `;
+            });
+
+            return `
+                <div class="w-full max-w-2xl flex flex-col space-y-6">
+                    <div class="flex flex-col space-y-2 md:flex-row md:items-center md:justify-between md:space-y-0">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+                                Raund: ${currentIndex + 1} / ${currentQuestions.length}
+                            </span>
+                            <span class="text-xs font-semibold uppercase tracking-wider text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-lg border border-blue-500/20">
+                                Jami progress: ${absoluteIndex} / ${shuffledPool.length}
+                            </span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-sm font-medium text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
+                                To'g'ri: ${score} / ${currentQuestions.length}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                        <div class="h-full bg-blue-500 transition-all duration-500 ease-out" style="width: ${progress}%"></div>
+                    </div>
+
+                    <div class="bg-slate-800 p-6 md:p-8 rounded-2xl border border-slate-700 shadow-xl space-y-6">
+                        <div class="flex items-start space-x-3">
+                            <span class="text-blue-400 font-bold text-lg">Q${question.id || absoluteIndex}:</span>
+                            <h2 class="text-xl md:text-2xl font-semibold text-slate-100 leading-snug">
+                                ${question.q}
+                            </h2>
+                        </div>
+
+                        <div class="space-y-3">
+                            ${optionsHTML}
+                        </div>
+                    </div>
+
+                    <div class="h-12 flex items-center justify-center">
+                        ${isAnswered ? `
+                            <div class="flex items-center space-x-2 text-blue-400 animate-pulse font-medium text-sm">
+                                <span>${currentIndex + 1 === currentQuestions.length ? 'Raund yakunlanmoqda...' : 'Keyingi savolga o\'tilmoqda...'}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderResultScreen() {
+            const roundPercentage = Math.round((score / currentQuestions.length) * 100);
+            const overallPercentage = Math.round((totalScore / totalAnswered) * 100);
+            const remainingQuestionsCount = shuffledPool.length - (poolPointer + currentQuestions.length);
+
+            let scoreColor = "text-yellow-400";
+            if (roundPercentage >= 90) scoreColor = "text-emerald-400";
+            else if (roundPercentage >= 60) scoreColor = "text-blue-400";
+            else if (roundPercentage < 40) scoreColor = "text-red-400";
+
+            const nextChunkSize = Math.min(quizLengthSetting, remainingQuestionsCount);
+
+            let actionBtnHTML = '';
+            if (remainingQuestionsCount > 0) {
+                actionBtnHTML = `
+                    <button onclick="startNextRound()" class="flex-1 flex items-center justify-center space-x-2 px-6 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-[0.98] animate-pulse">
+                        <span>Keyingi ${nextChunkSize} talikni boshlash</span>
+                        ${ICONS.arrowRight}
+                    </button>
+                `;
+            } else {
+                actionBtnHTML = `
+                    <div class="w-full bg-emerald-500/10 border border-emerald-500/25 p-4 rounded-xl text-center text-emerald-400 text-sm font-semibold">
+                        🎉 Tabriklaymiz! Siz barcha ${shuffledPool.length} ta savollarni to'liq yakunladingiz!
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="flex flex-col items-center justify-center p-6 space-y-8 max-w-xl w-full">
+                    <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center shadow-xl border border-slate-700 relative">
+                        <div class="absolute -inset-2 rounded-full border-2 border-dashed border-slate-600 animate-spin-slow opacity-20"></div>
+                        <div class="${scoreColor}">
+                            ${ICONS.trophy}
+                        </div>
+                    </div>
+
+                    <div class="text-center space-y-2">
+                        <h1 class="text-3xl font-bold text-slate-100 tracking-tight">Raund Yakunlandi!</h1>
+                        <p class="text-slate-400 text-sm">
+                            Hozirgi bosqich savollari yakunlandi. Quyida joriy va umumiy ko'rsatkichlaringiz keltirilgan.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-lg text-center space-y-1">
+                            <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold block">Ushbu raund</span>
+                            <div class="text-4xl font-extrabold ${scoreColor}">
+                                ${score} <span class="text-lg text-slate-500">/ ${currentQuestions.length}</span>
+                            </div>
+                            <span class="text-xs text-slate-400 block">(${roundPercentage}% muvaffaqiyat)</span>
+                        </div>
+
+                        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-lg text-center space-y-1">
+                            <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold block">Umumiy Natija (Jami)</span>
+                            <div class="text-4xl font-extrabold text-blue-400">
+                                ${totalScore} <span class="text-lg text-slate-550">/ ${totalAnswered}</span>
+                            </div>
+                            <span class="text-xs text-slate-400 block">(${overallPercentage}% o'rtacha aniqlik)</span>
+                        </div>
+                    </div>
+
+                    <div class="w-full bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-xl space-y-3">
+                        <div class="flex justify-between text-xs font-semibold text-slate-400">
+                            <span>UMUMIY BAZA PROGRESSI</span>
+                            <span class="text-blue-400">{totalAnswered} / ${shuffledPool.length} savol</span>
+                        </div>
+                        <div class="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-750">
+                            <div class="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-1000 ease-out" style="width: ${(totalAnswered / shuffledPool.length) * 100}%"></div>
+                        </div>
+                        <p class="text-xs text-center text-slate-500 italic">
+                            Siz ${shuffledPool.length} ta savoldan ${totalAnswered} tasini yakunladingiz. Hali yana ${remainingQuestionsCount} ta savol kutmoqda.
+                        </p>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-4 w-full">
+                        ${actionBtnHTML}
+                        <button onclick="restartEntirely()" class="flex-shrink-0 flex items-center justify-center space-x-2 px-6 py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 font-semibold rounded-xl transition-all active:scale-[0.98]">
+                            ${ICONS.refresh}
+                            <span>Bosh sahifa</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- Admin Dashboard Ekran ---
+        function renderAdminDashboardScreen() {
+            const filteredQuestions = questions.filter(q => 
+                q.q.toLowerCase().includes(questionSearchQuery.toLowerCase()) || 
+                q.a.toLowerCase().includes(questionSearchQuery.toLowerCase())
+            );
+
+            const usersList = JSON.parse(localStorage.getItem('quiz_users')) || [];
+            const filteredUsers = usersList.filter(u => 
+                u.username.toLowerCase().includes(userSearchQuery.toLowerCase())
+            );
+
+            const bazas = JSON.parse(localStorage.getItem('quiz_baza_configs')) || defaultBazas;
+
+            const tabBtnClass = (tab) => adminTab === tab 
+                ? "bg-blue-600 text-white flex items-center space-x-2 px-4 py-2.5 rounded-xl font-semibold transition-all text-sm" 
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800 flex items-center space-x-2 px-4 py-2.5 rounded-xl font-semibold transition-all text-sm";
+
+            let tabContentHTML = '';
+
+            // 1. Savollar boshqaruvi tabi
+            if (adminTab === 'questions') {
+                // Admin uchun tepada baza almashtirish dropdowni
+                let bazaSelectorHTML = `
+                    <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between bg-slate-900 p-4 rounded-xl border border-slate-750 flex-shrink-0 mb-4">
+                        <div class="space-y-0.5">
+                            <h4 class="text-sm font-bold text-slate-100">Hozirgi Tahrirlash Bazasi:</h4>
+                            <p class="text-xs text-slate-400">Ushbu bazaga kiritilgan o'zgarishlar faqat shu mavzu uchun saqlanadi.</p>
+                        </div>
+                        <select onchange="selectBazaAdmin(this.value)" class="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs font-semibold text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer">
+                            ${bazas.map(b => `<option value="${b.id}" ${b.id === currentBazaId ? 'selected' : ''}>${b.name} (${b.file})</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+
+                let questionsListHTML = '';
+                filteredQuestions.forEach((q, idx) => {
+                    const identifier = q.id || idx;
+                    questionsListHTML += `
+                        <div class="bg-slate-900 p-4 rounded-xl border border-slate-750 space-y-3 relative">
+                            <div class="flex justify-between items-start">
+                                <span class="text-xs font-bold text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-md border border-blue-500/20">
+                                    ID: ${q.id || (idx + 1)}
+                                </span>
+                                <div class="flex space-x-2">
+                                    <button onclick="openEditQModal('${identifier}')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md transition-colors">
+                                        ${ICONS.edit}
+                                    </button>
+                                    <button onclick="deleteQuestion('${identifier}')" class="p-1.5 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-md transition-colors">
+                                        ${ICONS.trash}
+                                    </button>
+                                </div>
+                            </div>
+                            <h4 class="text-slate-100 font-semibold text-sm leading-relaxed">${q.q}</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                <div class="p-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 font-medium">
+                                    <span class="text-[10px] uppercase font-bold text-emerald-500 block">To'g'ri (A):</span>
+                                    ${q.a}
+                                </div>
+                                <div class="p-2.5 rounded-lg border border-slate-750 bg-slate-850 text-slate-400">
+                                    <span class="text-[10px] uppercase font-bold text-slate-500 block">Variant B:</span>
+                                    ${q.b}
+                                </div>
+                                <div class="p-2.5 rounded-lg border border-slate-750 bg-slate-850 text-slate-400">
+                                    <span class="text-[10px] uppercase font-bold text-slate-500 block">Variant C:</span>
+                                    ${q.c}
+                                </div>
+                                <div class="p-2.5 rounded-lg border border-slate-750 bg-slate-850 text-slate-400">
+                                    <span class="text-[10px] uppercase font-bold text-slate-500 block">Variant D:</span>
+                                    ${q.d}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                tabContentHTML = `
+                    <div class="space-y-4 flex flex-col h-full overflow-hidden">
+                        ${bazaSelectorHTML}
+
+                        <div class="flex flex-col sm:flex-row gap-3 justify-between flex-shrink-0">
+                            <div class="relative flex-1">
+                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                    ${ICONS.search}
+                                </span>
+                                <input type="text" oninput="handleQSearch(this.value)" value="${questionSearchQuery}" placeholder="Hozirgi bazadan qidirish..." class="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-200" />
+                            </div>
+                            <button onclick="openAddQModal()" class="flex items-center justify-center space-x-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl transition-all text-sm">
+                                ${ICONS.plus}
+                                <span>Yangi Savol</span>
+                            </button>
+                        </div>
+                        <div class="flex-1 overflow-y-auto space-y-3 pr-1">
+                            ${filteredQuestions.length > 0 ? questionsListHTML : `<p class="text-center text-slate-500 py-6 text-sm">Ushbu bazada savollar mavjud emas.</p>`}
+                        </div>
+                    </div>
+                `;
+            } 
+            // 2. O'quvchilar tabi
+            else if (adminTab === 'users') {
+                let usersListHTML = '';
+                filteredUsers.forEach(u => {
+                    const hasActiveSession = u.session_token !== '';
+                    usersListHTML += `
+                        <tr class="border-b border-slate-750 hover:bg-slate-800/50 transition-colors text-sm">
+                            <td class="px-4 py-3.5 font-medium text-slate-200 capitalize">${u.username}</td>
+                            <td class="px-4 py-3.5 text-slate-400 font-mono">${u.password}</td>
+                            <td class="px-4 py-3.5">
+                                ${hasActiveSession 
+                                    ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-450/10 text-emerald-400 border border-emerald-500/20">
+                                         Faol (1 Qurilma)
+                                       </span>` 
+                                    : `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-750 text-slate-400 border border-slate-700">
+                                         Oflayn
+                                       </span>`}
+                            </td>
+                            <td class="px-4 py-3.5">
+                                <div class="flex items-center space-x-2">
+                                    <button onclick="openEditUModal('${u.username}')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors" title="Tahrirlash">
+                                        ${ICONS.edit}
+                                    </button>
+                                    ${hasActiveSession ? `
+                                        <button onclick="killUserSession('${u.username}')" class="px-2 py-1 bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-slate-900 rounded-lg text-xs font-bold transition-all">
+                                            Sessiyani yopish
+                                        </button>
+                                    ` : ''}
+                                    <button onclick="deleteUser('${u.username}')" class="p-1.5 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-lg transition-colors">
+                                        ${ICONS.trash}
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                tabContentHTML = `
+                    <div class="space-y-4 flex flex-col h-full overflow-hidden">
+                        <div class="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl space-y-1">
+                            <h4 class="text-blue-400 font-bold text-xs flex items-center space-x-1">
+                                <span>🔒 Qurilma Cheklovi</span>
+                            </h4>
+                            <p class="text-[11px] text-slate-350 leading-relaxed">
+                                O'quvchilar o'z hisoblariga faqat 1 ta qurilmadan kira oladilar. Kerak bo'lsa sessiyalarini qo'lda yakunlashingiz mumkin.
+                            </p>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row gap-3 justify-between">
+                            <div class="relative flex-1">
+                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                    ${ICONS.search}
+                                </span>
+                                <input type="text" oninput="handleUSearch(this.value)" value="${userSearchQuery}" placeholder="O'quvchilarni qidirish..." class="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-200" />
+                            </div>
+                            <button onclick="openAddUModal()" class="flex items-center justify-center space-x-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all text-sm">
+                                ${ICONS.userIcon}
+                                <span>Yangi O'quvchi</span>
+                            </button>
+                        </div>
+
+                        <div class="flex-1 overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-700 text-xs uppercase text-slate-400 bg-slate-850/50">
+                                        <th class="px-4 py-3">O'quvchi Logini</th>
+                                        <th class="px-4 py-3">Kirish Paroli</th>
+                                        <th class="px-4 py-3">Sessiya holati</th>
+                                        <th class="px-4 py-3">Amallar</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${filteredUsers.length > 0 ? usersListHTML : `<tr><td colspan="4" class="text-center text-slate-500 py-6 text-sm">Hech qanday o'quvchi topilmadi.</td></tr>`}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }
+            // 3. Bazalar (Files) sozlamalari tabi
+            else if (adminTab === 'baza_config') {
+                let bazasListHTML = '';
+                bazas.forEach(b => {
+                    const localQ = JSON.parse(localStorage.getItem(`quiz_questions_${b.id}`) || '[]');
+                    const qCount = localQ.length;
+                    bazasListHTML += `
+                        <div class="bg-slate-900 p-4 rounded-xl border border-slate-750 flex flex-col gap-3">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                <div class="space-y-1">
+                                    <h4 class="text-slate-100 font-bold text-sm">${b.name}</h4>
+                                    <p class="text-xs text-slate-400 font-mono">Baza fayli: <span class="text-blue-400">${b.file}</span></p>
+                                    <p class="text-xs text-slate-500">Hozirgi savollar: <span class="text-emerald-400 font-bold">${qCount} ta</span></p>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button onclick="openEditBazaModal('${b.id}')" class="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold transition-all">
+                                        ${ICONS.edit}
+                                        <span>Tahrirlash</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="border-t border-slate-750 pt-3 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                <label class="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold cursor-pointer transition-all">
+                                    ${ICONS.upload}
+                                    <span>JSON fayl yuklash</span>
+                                    <input type="file" accept=".json" onchange="handleBazaJsonUpload(event, '${b.id}')" class="hidden" />
+                                </label>
+                                <p class="text-[11px] text-slate-500 italic">Faylni tanlasangiz, "${b.name}" bazasi yangilanadi.</p>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                tabContentHTML = `
+                    <div class="space-y-4 flex flex-col h-full overflow-hidden">
+                        <div class="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl space-y-1 flex-shrink-0">
+                            <h4 class="text-blue-400 font-bold text-xs flex items-center space-x-1">
+                                <span>📁 Yonma-yon qo'yilgan JSON fayllar</span>
+                            </h4>
+                            <p class="text-[11px] text-slate-350 leading-relaxed">
+                                Har bir baza uchun <span class="font-mono text-amber-400">"JSON fayl yuklash"</span> tugmasini bosing va kompyuteringizdan <b>.json</b> faylni tanlang. Savollar <b>shu brauzerda</b> saqlanadi. Boshqa brauzer yoki kompyuterda ham ishlashi uchun — har safar qayta yuklab qo'ying.<br/>
+                                JSON formati: <span class="font-mono text-emerald-400">[{"id":1,"q":"...","a":"...","b":"...","c":"...","d":"...","correct":"a"}]</span>
+                            </p>
+                        </div>
+                        <div class="flex-1 overflow-y-auto space-y-3">
+                            ${bazasListHTML}
+                        </div>
+                    </div>
+                `;
+            }
+            // 4. Sozlamalar tabi
+            else if (adminTab === 'settings') {
+                tabContentHTML = `
+                    <div class="space-y-6 bg-slate-900 p-6 rounded-xl border border-slate-750">
+                        <div class="space-y-2">
+                            <h4 class="font-bold text-sm text-slate-100 border-b border-slate-750 pb-2">Admin Hisob Ma'lumotlarini o'zgartirish</h4>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-400 font-semibold block">Yangi Admin Login</label>
+                                <input type="text" id="newAdminUser" value="${localStorage.getItem('admin_username')}" class="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-200 text-sm" />
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-400 font-semibold block">Yangi Admin Parol</label>
+                                <input type="password" id="newAdminPass" placeholder="O'zgartirish uchun yangi parol yozing..." class="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-200 text-sm" />
+                            </div>
+                        </div>
+
+                        <button onclick="updateAdminCredentials()" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm transition-all">
+                            O'zgarishlarni Saqlash
+                        </button>
+                    </div>
+                `;
+            }
+
+            // --- Modal Oynalar ---
+            let modalHTML = '';
+            if (activeModal) {
+                let modalTitle = '';
+                let modalContent = '';
+
+                if (activeModal === 'add_q' || activeModal === 'edit_q') {
+                    const isEdit = activeModal === 'edit_q';
+                    modalTitle = isEdit ? "Savolni tahrirlash" : "Yangi savol qo'shish";
+                    let qText = '', aText = '', bText = '', cText = '', dText = '';
+
+                    if (isEdit) {
+                        const qObj = questions.find((item, idx) => item.id == editingQuestionId || idx == editingQuestionId);
+                        if (qObj) {
+                            qText = qObj.q; aText = qObj.a; bText = qObj.b; cText = qObj.c; dText = qObj.d;
+                        }
+                    }
+
+                    modalContent = `
+                        <div class="space-y-4 text-left">
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-400 font-semibold block">Savol matni</label>
+                                <textarea id="modalQ" rows="2" class="w-full px-4 py-2.5 bg-slate-900 border border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-200">${qText}</textarea>
+                            </div>
+                            
+                            <div class="space-y-1">
+                                <label class="text-xs text-emerald-400 font-semibold block">To'g'ri javob varianti (A)</label>
+                                <input type="text" id="modalA" value="${aText}" class="w-full px-4 py-2.5 bg-slate-900 border border-emerald-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm text-slate-200" />
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div class="space-y-1">
+                                    <label class="text-xs text-slate-400 font-semibold block">Variant B</label>
+                                    <input type="text" id="modalB" value="${bText}" class="w-full px-4 py-2.5 bg-slate-900 border border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-200" />
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-xs text-slate-400 font-semibold block">Variant C</label>
+                                    <input type="text" id="modalC" value="${cText}" class="w-full px-4 py-2.5 bg-slate-900 border border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-200" />
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-xs text-slate-400 font-semibold block">Variant D</label>
+                                    <input type="text" id="modalD" value="${dText}" class="w-full px-4 py-2.5 bg-slate-900 border border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-200" />
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } 
+                else if (activeModal === 'add_u' || activeModal === 'edit_u') {
+                    const isEdit = activeModal === 'edit_u';
+                    modalTitle = isEdit ? "O'quvchi ma'lumotlarini tahrirlash" : "Yangi o'quvchi qo'shish";
+                    let uName = '', uPass = '';
+
+                    if (isEdit) {
+                        const userObj = usersList.find(u => u.username === editingUsername);
+                        if (userObj) {
+                            uName = userObj.username;
+                            uPass = userObj.password;
+                        }
+                    }
+
+                    modalContent = `
+                        <div class="space-y-4 text-left">
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-400 font-semibold block">Foydalanuvchi logini</label>
+                                <input type="text" id="modalUser" value="${uName}" ${isEdit ? 'disabled' : ''} placeholder="masalan: alisher" class="w-full px-4 py-2.5 bg-slate-900 border border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-200 disabled:opacity-50" />
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-400 font-semibold block">Parol</label>
+                                <input type="text" id="modalPass" value="${uPass}" placeholder="masalan: 1234" class="w-full px-4 py-2.5 bg-slate-900 border border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-200" />
+                            </div>
+                        </div>
+                    `;
+                }
+                else if (activeModal === 'edit_b') {
+                    modalTitle = "Baza va fayl nomini tahrirlash";
+                    const bazaObj = bazas.find(b => b.id === editingBazaId);
+                    modalContent = `
+                        <div class="space-y-4 text-left">
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-400 font-semibold block">Baza nomi (Ekrandagi ko'rinishi)</label>
+                                <input type="text" id="modalBazaName" value="${bazaObj ? bazaObj.name : ''}" class="w-full px-4 py-2.5 bg-slate-900 border border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-200" />
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-400 font-semibold block">Fayl nomi (.json)</label>
+                                <input type="text" id="modalBazaFile" value="${bazaObj ? bazaObj.file : ''}" class="w-full px-4 py-2.5 bg-slate-900 border border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-200" />
+                            </div>
+                        </div>
+                    `;
+                }
+
+                modalHTML = `
+                    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+                        <div class="bg-slate-850 border border-slate-700 w-full max-w-lg rounded-2xl shadow-2xl p-6 space-y-4">
+                            <h3 class="text-lg font-bold text-slate-100">${modalTitle}</h3>
+                            <div class="border-t border-slate-750 pt-3">
+                                ${modalContent}
+                            </div>
+                            <div class="flex justify-end space-x-3 pt-4 border-t border-slate-800">
+                                <button onclick="closeModal()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold rounded-xl text-xs transition-all">
+                                    Bekor qilish
+                                </button>
+                                <button onclick="saveModalData()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition-all">
+                                    Saqlash
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="w-full max-w-5xl bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden flex flex-col md:flex-row h-[85vh]">
+                    <!-- Sidebar -->
+                    <div class="md:w-64 bg-slate-850 p-6 border-b md:border-b-0 md:border-r border-slate-700 flex flex-col justify-between">
+                        <div class="space-y-6">
+                            <div class="flex items-center space-x-2.5 border-b border-slate-700 pb-4">
+                                <div class="w-10 h-10 bg-blue-600/10 text-blue-400 rounded-xl flex items-center justify-center border border-blue-500/20">
+                                    ${ICONS.shield}
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-slate-100 text-sm">Tarix Quiz Admin</h3>
+                                    <p class="text-[10px] text-emerald-400 font-semibold">Boshqaruv faol</p>
+                                </div>
+                            </div>
+
+                            <nav class="space-y-1.5">
+                                <button onclick="switchAdminTab('questions')" class="${tabBtnClass('questions')} w-full justify-start">
+                                    ${ICONS.bookOpen}
+                                    <span>Savollar boshqaruvi</span>
+                                </button>
+                                <button onclick="switchAdminTab('users')" class="${tabBtnClass('users')} w-full justify-start">
+                                    ${ICONS.users}
+                                    <span>O'quvchilar (1-Device)</span>
+                                </button>
+                                <button onclick="switchAdminTab('baza_config')" class="${tabBtnClass('baza_config')} w-full justify-start">
+                                    ${ICONS.database}
+                                    <span>Bazalar sozlamasi</span>
+                                </button>
+                                <button onclick="switchAdminTab('settings')" class="${tabBtnClass('settings')} w-full justify-start">
+                                    ${ICONS.settings}
+                                    <span>Tizim sozlamalari</span>
+                                </button>
+                            </nav>
+                        </div>
+
+                        <div class="space-y-3 pt-6 border-t border-slate-750">
+                            <button onclick="handleLogout()" class="w-full flex items-center space-x-2 px-4 py-2.5 bg-slate-800 hover:bg-red-500/10 text-slate-455 hover:text-red-400 font-semibold rounded-xl transition-all text-xs">
+                                ${ICONS.logout}
+                                <span>Tizimdan chiqish</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Asosiy Oyna -->
+                    <div class="flex-1 p-6 flex flex-col justify-between overflow-hidden">
+                        <div class="space-y-4 overflow-hidden flex flex-col h-full">
+                            <div class="flex items-center justify-between border-b border-slate-750 pb-3 flex-shrink-0">
+                                <h3 class="font-bold text-lg text-slate-100">
+                                    ${adminTab === 'questions' ? 'Savollar boshqaruvi' : adminTab === 'users' ? 'O\'quvchilar xavfsizligi' : adminTab === 'baza_config' ? 'Mavzular / Bazalar' : 'Tizim sozlamalari'}
+                                </h3>
+                                <span class="text-xs text-slate-400">Jami: <b>${questions.length} ta</b> savol faol</span>
+                            </div>
+                            
+                            <div class="flex-1 overflow-hidden">
+                                ${tabContentHTML}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${modalHTML}
+                </div>
+            `;
+        }
+
+        // --- Admin mantiqiy funksiyalari ---
+
+        function selectBazaAdmin(bazaId) {
+            selectBaza(bazaId);
+        }
+
+        function switchAdminTab(tab) {
+            adminTab = tab;
+            questionSearchQuery = '';
+            userSearchQuery = '';
+            render();
+        }
+
+        // CRUD: Savolni O'chirish (Hozirgi bazadan)
+        function deleteQuestion(idOrIdx) {
+            if (!confirm('Haqiqatan ham ushbu savolni o\'chirmoqchimisiz?')) return;
+            const index = questions.findIndex((q, idx) => q.id == idOrIdx || idx == idOrIdx);
+            if (index !== -1) {
+                questions.splice(index, 1);
+                localStorage.setItem(`quiz_questions_${currentBazaId}`, JSON.stringify(questions));
+                render();
+            }
+        }
+
+        // CRUD: Foydalanuvchini O'chirish
+        function deleteUser(username) {
+            if (!confirm(`Haqiqatan ham "${username}" o'quvchini butunlay o'chirib tashlamoqchimisiz?`)) return;
+            const usersList = JSON.parse(localStorage.getItem('quiz_users')) || [];
+            const index = usersList.findIndex(u => u.username === username);
+            if (index !== -1) {
+                usersList.splice(index, 1);
+                localStorage.setItem('quiz_users', JSON.stringify(usersList));
+                render();
+            }
+        }
+
+        function killUserSession(username) {
+            const usersList = JSON.parse(localStorage.getItem('quiz_users')) || [];
+            const userObj = usersList.find(u => u.username === username);
+            if (userObj) {
+                userObj.session_token = '';
+                localStorage.setItem('quiz_users', JSON.stringify(usersList));
+                alert(`"${username}" sessiyasi muvaffaqiyatli yopildi!`);
+                render();
+            }
+        }
+
+        function openAddQModal() { activeModal = 'add_q'; editingQuestionId = null; render(); }
+        function openEditQModal(idOrIdx) { activeModal = 'edit_q'; editingQuestionId = idOrIdx; render(); }
+        function openAddUModal() { activeModal = 'add_u'; editingUsername = null; render(); }
+        function openEditUModal(username) { activeModal = 'edit_u'; editingUsername = username; render(); }
+        function openEditBazaModal(bazaId) { activeModal = 'edit_b'; editingBazaId = bazaId; render(); }
+        
+        function closeModal() {
+            activeModal = null;
+            editingQuestionId = null;
+            editingUsername = null;
+            editingBazaId = null;
+            render();
+        }
+
+        function saveModalData() {
+            const usersList = JSON.parse(localStorage.getItem('quiz_users')) || [];
+            const bazas = JSON.parse(localStorage.getItem('quiz_baza_configs')) || defaultBazas;
+
+            if (activeModal === 'add_q' || activeModal === 'edit_q') {
+                const q = document.getElementById('modalQ').value.trim();
+                const a = document.getElementById('modalA').value.trim();
+                const b = document.getElementById('modalB').value.trim();
+                const c = document.getElementById('modalC').value.trim();
+                const d = document.getElementById('modalD').value.trim();
+
+                if (!q || !a || !b || !c || !d) {
+                    alert('Barcha maydonlarni to\'ldiring!');
+                    return;
+                }
+
+                if (activeModal === 'add_q') {
+                    const maxId = questions.reduce((max, item) => (item.id > max ? item.id : max), 0);
+                    questions.unshift({ id: maxId + 1, q, a, b, c, d, correct: 'a' });
+                } else {
+                    const qObj = questions.find((item, idx) => item.id == editingQuestionId || idx == editingQuestionId);
+                    if (qObj) {
+                        qObj.q = q; qObj.a = a; qObj.b = b; qObj.c = c; qObj.d = d;
+                    }
+                }
+                localStorage.setItem(`quiz_questions_${currentBazaId}`, JSON.stringify(questions));
+            } 
+            else if (activeModal === 'add_u' || activeModal === 'edit_u') {
+                const usernameInput = document.getElementById('modalUser').value.trim().toLowerCase();
+                const passwordInput = document.getElementById('modalPass').value.trim();
+
+                if (!usernameInput || !passwordInput) {
+                    alert('Login va parol maydonlarini to\'ldiring!');
+                    return;
+                }
+
+                if (activeModal === 'add_u') {
+                    const alreadyExists = usersList.some(u => u.username === usernameInput);
+                    if (alreadyExists || usernameInput === 'admin') {
+                        alert('Ushbu foydalanuvchi nomi tizimda allaqachon mavjud!');
+                        return;
+                    }
+                    usersList.unshift({ username: usernameInput, password: passwordInput, session_token: '' });
+                } else {
+                    const userObj = usersList.find(u => u.username === editingUsername);
+                    if (userObj) {
+                        userObj.password = passwordInput;
+                    }
+                }
+                localStorage.setItem('quiz_users', JSON.stringify(usersList));
+            }
+            else if (activeModal === 'edit_b') {
+                const newBazaName = document.getElementById('modalBazaName').value.trim();
+                const newBazaFile = document.getElementById('modalBazaFile').value.trim();
+                if (!newBazaName || !newBazaFile) {
+                    alert('Baza nomi va fayl nomi bo\'sh bo\'lishi mumkin emas!');
+                    return;
+                }
+                if (!newBazaFile.toLowerCase().endsWith('.json')) {
+                    alert('Fayl nomi ".json" kengaytmasi bilan tugashi shart!');
+                    return;
+                }
+                const bazaObj = bazas.find(b => b.id === editingBazaId);
+                if (bazaObj) {
+                    bazaObj.name = newBazaName;
+                    bazaObj.file = newBazaFile;
+                    localStorage.setItem('quiz_baza_configs', JSON.stringify(bazas));
+                }
+            }
+
+            closeModal();
+        }
+
+        // Admin sozlamalarini yangilash
+        function updateAdminCredentials() {
+            const newUser = document.getElementById('newAdminUser').value.trim();
+            const newPass = document.getElementById('newAdminPass').value.trim();
+
+            if (!newUser) {
+                alert('Admin logini bo\'sh bo\'lishi mumkin emas!');
+                return;
+            }
+
+            localStorage.setItem('admin_username', newUser);
+            if (newPass) {
+                if (newPass.length < 4) {
+                    alert('Parol kamida 4 xonali bo\'lishi lozim!');
+                    return;
+                }
+                localStorage.setItem('admin_password', newPass);
+            }
+
+            alert('Admin ma\'lumotlari muvaffaqiyatli yangilandi!');
+            render();
+        }
+
+        // --- Quiz Funksiyalari ---
+
+        function handleBazaJsonUpload(event, bazaId) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const bazas = JSON.parse(localStorage.getItem('quiz_baza_configs')) || defaultBazas;
+            const bazaObj = bazas.find(b => b.id === bazaId);
+            const bazaName = bazaObj ? bazaObj.name : bazaId;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (Array.isArray(data) && data.length > 0 && data[0].q && data[0].a) {
+                        localStorage.setItem(`quiz_questions_${bazaId}`, JSON.stringify(data));
+                        if (bazaId === currentBazaId) {
+                            questions = data;
+                        }
+                        alert(`✅ "${bazaName}" bazasiga ${data.length} ta savol muvaffaqiyatli yuklandi!`);
+                        render();
+                    } else {
+                        alert('❌ Fayl formati noto\'g\'ri. JSON faylda {q, a, b, c, d, correct} maydonlari bo\'lishi kerak.');
+                    }
+                } catch (err) {
+                    alert('❌ JSON faylni o\'qishda xatolik: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (Array.isArray(data) && data.length > 0 && data[0].q && data[0].a) {
+                        questions = data;
+                        localStorage.setItem(`quiz_questions_${currentBazaId}`, JSON.stringify(questions));
+                        gameState = 'start';
+                        infoMsg = 'Fayl muvaffaqiyatli yuklandi!';
+                    } else {
+                        alert('Fayl formati noto\'g\'ri. Iltimos, to\'g\'ri JSON fayl yuklang.');
+                    }
+                } catch (err) {
+                    alert('JSON faylni o\'qishda xatolik yuz berdi.');
+                }
+                render();
+            };
+            reader.readAsText(file);
+        }
+
+        function updateQuizLength(value) {
+            quizLengthSetting = Number(value);
+        }
+
+        function startNewQuiz() {
+            shuffledPool = [...questions].sort(() => 0.5 - Math.random());
+            poolPointer = 0;
+
+            const firstChunkSize = Math.min(quizLengthSetting, shuffledPool.length);
+            currentQuestions = shuffledPool.slice(0, firstChunkSize);
+
+            currentIndex = 0;
+            score = 0;
+            totalScore = 0;
+            totalAnswered = 0;
+            gameState = 'playing';
+
+            prepareQuestion(currentQuestions[0]);
+            render();
+        }
+
+        function startNextRound() {
+            const nextPointer = poolPointer + quizLengthSetting;
+
+            if (nextPointer < shuffledPool.length) {
+                const nextChunkSize = Math.min(quizLengthSetting, shuffledPool.length - nextPointer);
+                currentQuestions = shuffledPool.slice(nextPointer, nextPointer + nextChunkSize);
+
+                poolPointer = nextPointer;
+                currentIndex = 0;
+                score = 0;
+                gameState = 'playing';
+
+                prepareQuestion(currentQuestions[0]);
+                render();
+            }
+        }
+
+        function prepareQuestion(question) {
+            isAnswered = false;
+            selectedAnswer = null;
+
+            const options = [
+                { key: 'a', text: question.a },
+                { key: 'b', text: question.b },
+                { key: 'c', text: question.c },
+                { key: 'd', text: question.d }
+            ];
+
+            shuffledOptions = options.sort(() => 0.5 - Math.random());
+        }
+
+        function handleAnswerClick(optionKey) {
+            if (isAnswered) return;
+
+            isAnswered = true;
+            selectedAnswer = optionKey;
+
+            const isCorrect = optionKey === currentQuestions[currentIndex].correct;
+            if (isCorrect) {
+                score++;
+                totalScore++;
+            }
+            totalAnswered++;
+
+            render();
+
+            setTimeout(() => {
+                autoNextQuestion();
+            }, 1200);
+        }
+
+        // Avtomatik ravishda keyingi savolga o'tish
+        function autoNextQuestion() {
+            const nextIndex = currentIndex + 1;
+            if (nextIndex < currentQuestions.length) {
+                currentIndex = nextIndex;
+                prepareQuestion(currentQuestions[currentIndex]);
+            } else {
+                gameState = 'finished';
+            }
+            render();
+        }
+
+        function restartEntirely() {
+            gameState = 'start';
+            render();
+        }
+
+        // --- Boshlang'ich sahifa yuklanishi ---
+        window.onload = function() {
+            render();
+        };
+    </script>
+</body>
+</html>
